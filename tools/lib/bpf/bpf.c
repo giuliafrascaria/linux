@@ -153,6 +153,8 @@ int bpf_load_program_name(enum bpf_prog_type type, const char *name,
 	attr.kern_version = kern_version;
 	memcpy(attr.prog_name, name, min(name_len, BPF_OBJ_NAME_LEN - 1));
 
+	printk(KERN_DEBUG "calling sys bpf \n");
+
 	fd = sys_bpf(BPF_PROG_LOAD, &attr, sizeof(attr));
 	if (fd >= 0 || !log_buf || !log_buf_sz)
 		return fd;
