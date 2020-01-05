@@ -88,11 +88,15 @@ int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes);
 size_t iov_iter_single_seg_count(const struct iov_iter *i);
 size_t copy_page_to_iter(struct page *page, size_t offset, size_t bytes,
 			 struct iov_iter *i);
+size_t copy_page_to_iter_giulia(struct page *page, size_t offset, size_t bytes,
+			 struct iov_iter *i);
 size_t copy_page_from_iter(struct page *page, size_t offset, size_t bytes,
 			 struct iov_iter *i);
 
 size_t _copy_to_iter(const void *addr, size_t bytes, struct iov_iter *i);
-size_t _copy_from_iter(void *addr, size_t bytes, struct iov_iter *i);
+size_t _copy_to_iter_giulia(const void *addr, size_t bytes, struct iov_iter *i);
+
+ssize_t _copy_from_iter(void *addr, size_t bytes, struct iov_iter *i);
 bool _copy_from_iter_full(void *addr, size_t bytes, struct iov_iter *i);
 size_t _copy_from_iter_nocache(void *addr, size_t bytes, struct iov_iter *i);
 bool _copy_from_iter_full_nocache(void *addr, size_t bytes, struct iov_iter *i);
@@ -105,6 +109,17 @@ size_t copy_to_iter(const void *addr, size_t bytes, struct iov_iter *i)
 	else
 		return _copy_to_iter(addr, bytes, i);
 }
+
+
+static __always_inline __must_check
+size_t copy_to_iter_giulia(const void *addr, size_t bytes, struct iov_iter *i)
+{
+	if (unlikely(!check_copy_size(addr, bytes, true)))
+		return 0;
+	else
+		return _copy_to_iter_giulia(addr, bytes, i);
+}
+
 
 static __always_inline __must_check
 size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
