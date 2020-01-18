@@ -143,7 +143,7 @@ static int copyout_giulia(void __user *to, const void *from, size_t n)
 {
 	if (access_ok(VERIFY_WRITE, to, n)) {
 		kasan_check_read(from, n);
-		n = raw_copy_to_user(to, from, n);
+		n = raw_copy_to_user_giulia(to, from, n);
 	}
 	return n;
 }
