@@ -147,6 +147,7 @@ static int copyout_giulia(void __user *to, const void *from, size_t n)
 	}
 	return n;
 }
+EXPORT_SYMBOL(copyout_giulia);
 
 static int copyin(void *to, const void __user *from, size_t n)
 {
