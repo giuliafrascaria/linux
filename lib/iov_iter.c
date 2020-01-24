@@ -268,6 +268,8 @@ static size_t copy_page_to_iter_iovec_giulia(struct page *page, size_t offset, s
 		kaddr = kmap_atomic(page);
 		from = kaddr + offset;
 
+		//if there is bpf instrumentation then do x otherwise default copyout
+
 		/* first chunk, usually the only one */
 		left = copyout_giulia(buf, from, copy);
 		copy -= left;
