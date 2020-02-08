@@ -149,7 +149,6 @@ size_t copy_to_iter_bpf(const void *addr, size_t bytes, struct iov_iter *i)
 	else
 		return _copy_to_iter_bpf(addr, bytes, i);
 }
-EXPORT_SYMBOL(copy_to_iter_bpf);
 
 static __always_inline __must_check
 size_t copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
