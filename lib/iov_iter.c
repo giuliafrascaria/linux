@@ -8,6 +8,7 @@
 #include <linux/splice.h>
 #include <net/checksum.h>
 #include <linux/scatterlist.h>
+#include <linux/kernel.h>
 
 #define PIPE_PARANOIA /* for now */
 
@@ -274,7 +275,19 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		from = kaddr + offset;
 
 		/* first chunk, usually the only one */
-		left = copyout_bpf(buf, from, copy);
+		if (copy == 42)
+		{
+			//leave a way to go through normal path just in case
+			printk(KERN_DEBUG "normal copyout %lu\n", from);
+			left = copyout(buf, from, copy);
+		}
+		else 
+		{
+			//go through my own
+			printk(KERN_DEBUG "parallel read path %lu\n", from);
+			left = copyout_bpf(buf, from, copy);
+		}
+		
 		copy -= left;
 		skip += copy;
 		from += copy;

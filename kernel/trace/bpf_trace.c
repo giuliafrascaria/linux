@@ -142,6 +142,8 @@ BPF_CALL_3(bpf_probe_read, void *, dst, u32, size, const void *, unsafe_ptr)
 {
 	int ret;
 
+	printk(KERN_DEBUG "probe read from %lu to %lu\n", unsafe_ptr, dst);
+
 	ret = security_locked_down(LOCKDOWN_BPF_READ);
 	if (ret < 0)
 		goto out;
@@ -151,6 +153,7 @@ BPF_CALL_3(bpf_probe_read, void *, dst, u32, size, const void *, unsafe_ptr)
 out:
 		memset(dst, 0, size);
 
+	printk(KERN_DEBUG "exiting probe read\n");
 	return ret;
 }
 
