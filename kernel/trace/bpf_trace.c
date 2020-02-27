@@ -19,6 +19,8 @@
 #include "trace_probe.h"
 #include "trace.h"
 
+#include "../../lib/kstrtox.h"
+
 #define bpf_event_rcu_dereference(p)					\
 	rcu_dereference_protected(p, lockdep_is_held(&bpf_event_mutex))
 
@@ -211,6 +213,7 @@ static const struct bpf_func_proto *bpf_get_probe_write_proto(void)
 
 	return &bpf_probe_write_user_proto;
 }
+
 
 #define BPF_STRTOX_BASE_MASK 0x1F
 
