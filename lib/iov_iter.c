@@ -252,7 +252,7 @@ done:
 static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size_t bytes,
 			 struct iov_iter *i)
 {
-	printk(KERN_DEBUG "iovec\n");
+	//printk(KERN_DEBUG "iovec\n");
 	size_t skip, copy, left, wanted;
 	const struct iovec *iov;
 	char __user *buf;
