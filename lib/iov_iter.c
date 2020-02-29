@@ -272,7 +272,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	copy = min(bytes, iov->iov_len - skip);
 
 	if (IS_ENABLED(CONFIG_HIGHMEM) && !fault_in_pages_writeable(buf, copy)) {
-		printk(KERN_DEBUG "config highmem enabled\n");
+		//printk(KERN_DEBUG "config highmem enabled\n");
 		kaddr = kmap_atomic(page);
 		from = kaddr + offset;
 
@@ -280,13 +280,13 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		if (copy == 42)
 		{
 			//leave a way to go through normal path just in case
-			printk(KERN_DEBUG "normal copyout %lu\n", (long unsigned int) from);
+			//printk(KERN_DEBUG "normal copyout %lu\n", (long unsigned int) from);
 			left = copyout(buf, from, copy);
 		}
 		else 
 		{
 			//go through my own
-			printk(KERN_DEBUG "parallel read path %lu\n", (long unsigned int) from);
+			//printk(KERN_DEBUG "parallel read path %lu\n", (long unsigned int) from);
 			left = copyout_bpf(buf, from, copy);
 		}
 		
@@ -315,7 +315,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		copy = min(bytes, iov->iov_len - skip);
 	}
 	/* Too bad - revert to non-atomic kmap */
-	printk(KERN_DEBUG "non atomic\n");
+	//printk(KERN_DEBUG "non atomic\n");
 	kaddr = kmap(page);
 	from = kaddr + offset;
 	
@@ -323,13 +323,13 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	if (copy == 42)
 	{
 		//leave a way to go through normal path just in case
-		printk(KERN_DEBUG "normal copyout 1 %lu\n", (long unsigned int) from);
+		//printk(KERN_DEBUG "normal copyout 1 %lu\n", (long unsigned int) from);
 		left = copyout(buf, from, copy);
 	}
 	else 
 	{
 		//go through my own
-		printk(KERN_DEBUG "parallel read path 1 %lu\n", (long unsigned int) from);
+		//printk(KERN_DEBUG "parallel read path 1 %lu\n", (long unsigned int) from);
 		left = copyout_bpf(buf, from, copy);
 	}
 
