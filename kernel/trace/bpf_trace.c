@@ -395,6 +395,29 @@ static const struct bpf_func_proto bpf_perf_event_read_proto = {
 	.arg2_type	= ARG_ANYTHING,
 };
 
+BPF_CALL_3(bpf_kstrtol, const char *, buf, size_t, buf_len, long *, res)
+{
+	long long _res;
+	int err;
+
+	err = kstrtol(buf, buf_len, &_res);
+	if (err < 0)
+		return err;
+	if (_res != (long)_res)
+		return -ERANGE;
+	*res = _res;
+	return err;
+}
+
+static const struct bpf_func_proto bpf_kstrtol_proto = {
+	.func		= bpf_kstrtol,
+	.gpl_only	= true,
+	.ret_type	= RET_INTEGER,
+	.arg1_type	= ARG_PTR_TO_MEM,
+	.arg2_type	= ARG_CONST_SIZE,
+	.arg3_type	= ARG_PTR_TO_LONG,
+};
+
 BPF_CALL_4(bpf_perf_event_read_value, struct bpf_map *, map, u64, flags,
 	   struct bpf_perf_event_value *, buf, u32, size)
 {
@@ -737,6 +760,8 @@ tracing_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 		return &bpf_strtol_proto;
 	case BPF_FUNC_strtoul:
 		return &bpf_strtoul_proto;
+	case BPF_FUNF_kstrtol:
+		return &bpf_kstrtol_proto;
 #ifdef CONFIG_CGROUPS
 	case BPF_FUNC_get_current_cgroup_id:
 		return &bpf_get_current_cgroup_id_proto;
