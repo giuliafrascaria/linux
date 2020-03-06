@@ -397,7 +397,7 @@ static const struct bpf_func_proto bpf_perf_event_read_proto = {
 
 BPF_CALL_3(bpf_kstrtol, const char *, buf, size_t, buf_len, long *, res)
 {
-	long long _res;
+	long _res;
 	int err;
 
 	err = kstrtol(buf, buf_len, &_res);
