@@ -413,7 +413,7 @@ static const struct bpf_func_proto bpf_kstrtol_proto = {
 	.func		= bpf_kstrtol,
 	.gpl_only	= true,
 	.ret_type	= RET_INTEGER,
-	.arg1_type	= ARG_ANYTHING,
+	.arg1_type	= ARG_PTR_TO_MEM,
 	.arg2_type	= ARG_CONST_SIZE,
 	.arg3_type	= ARG_PTR_TO_LONG,
 };
