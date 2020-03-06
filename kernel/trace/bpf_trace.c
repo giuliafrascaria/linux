@@ -760,7 +760,7 @@ tracing_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 		return &bpf_strtol_proto;
 	case BPF_FUNC_strtoul:
 		return &bpf_strtoul_proto;
-	case BPF_FUNF_kstrtol:
+	case BPF_FUNC_kstrtol:
 		return &bpf_kstrtol_proto;
 #ifdef CONFIG_CGROUPS
 	case BPF_FUNC_get_current_cgroup_id:
