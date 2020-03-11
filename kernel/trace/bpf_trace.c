@@ -395,6 +395,20 @@ static const struct bpf_func_proto bpf_perf_event_read_proto = {
 	.arg2_type	= ARG_ANYTHING,
 };
 
+
+BPF_CALL_0(bpf_printk)
+{
+	printk(KERN_DEBUG "mostly harmless\n");
+	return (int) 1;
+}
+
+static const struct bpf_func_proto bpf_printk_proto = {
+	.func		= bpf_printk,
+	.gpl_only	= true,
+	.ret_type	= RET_INTEGER,
+};
+
+
 BPF_CALL_3(bpf_kstrtol, const char *, buf, size_t, buf_len, long *, res)
 {
 	long _res;
@@ -786,6 +800,8 @@ kprobe_prog_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 		return &bpf_get_stack_proto;
 	case BPF_FUNC_perf_event_read_value:
 		return &bpf_perf_event_read_value_proto;
+	case BPF_FUNC_printk:
+		return &bpf_printk_proto;
 #ifdef CONFIG_BPF_KPROBE_OVERRIDE
 	case BPF_FUNC_override_return:
 		return &bpf_override_return_proto;
