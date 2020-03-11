@@ -396,25 +396,25 @@ static const struct bpf_func_proto bpf_perf_event_read_proto = {
 };
 
 
-BPF_CALL_0(bpf_printk)
+BPF_CALL_0(bpf_my_printk)
 {
 	printk(KERN_DEBUG "mostly harmless\n");
 	return (int) 1;
 }
 
-static const struct bpf_func_proto bpf_printk_proto = {
-	.func		= bpf_printk,
+static const struct bpf_func_proto bpf_my_printk_proto = {
+	.func		= bpf_my_printk,
 	.gpl_only	= true,
 	.ret_type	= RET_INTEGER,
 };
 
 
-BPF_CALL_3(bpf_kstrtol, const char *, buf, size_t, buf_len, long *, res)
+BPF_CALL_3(bpf_kstrtol, const char *, buf, unsigned int, base, long *, res)
 {
 	long _res;
 	int err;
 
-	err = kstrtol(buf, buf_len, &_res);
+	err = kstrtol(buf, base, &_res);
 	if (err < 0)
 		return err;
 	if (_res != (long)_res)
@@ -774,8 +774,6 @@ tracing_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 		return &bpf_strtol_proto;
 	case BPF_FUNC_strtoul:
 		return &bpf_strtoul_proto;
-	case BPF_FUNC_kstrtol:
-		return &bpf_kstrtol_proto;
 #ifdef CONFIG_CGROUPS
 	case BPF_FUNC_get_current_cgroup_id:
 		return &bpf_get_current_cgroup_id_proto;
@@ -800,8 +798,10 @@ kprobe_prog_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 		return &bpf_get_stack_proto;
 	case BPF_FUNC_perf_event_read_value:
 		return &bpf_perf_event_read_value_proto;
-	case BPF_FUNC_printk:
-		return &bpf_printk_proto;
+	case BPF_FUNC_my_printk:
+		return &bpf_my_printk_proto;
+	case BPF_FUNC_kstrtol:
+		return &bpf_kstrtol_proto;
 #ifdef CONFIG_BPF_KPROBE_OVERRIDE
 	case BPF_FUNC_override_return:
 		return &bpf_override_return_proto;

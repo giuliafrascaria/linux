@@ -2865,7 +2865,7 @@ union bpf_attr {
 	FN(send_signal),		\
 	FN(tcp_gen_syncookie), \
 	FN(kstrtol), \
-	FN(printk),
+	FN(my_printk),
 
 /* integer value in 'imm' field of BPF_CALL instruction selects which helper
  * function eBPF program intends to call
