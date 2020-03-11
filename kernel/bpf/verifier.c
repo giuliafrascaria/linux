@@ -2973,6 +2973,7 @@ static int check_stack_boundary(struct bpf_verifier_env *env, int regno,
 		    register_is_null(reg))
 			return 0;
 
+		printk(KERN_DEBUG "check stack boundary\n");
 		verbose(env, "R%d type=%s expected=%s\n", regno,
 			reg_type_str[reg->type],
 			reg_type_str[PTR_TO_STACK]);
@@ -3990,11 +3991,15 @@ static int check_helper_call(struct bpf_verifier_env *env, int func_id, int insn
 	}
 
 	meta.func_id = func_id;
-	printk(KERN_DEBUG "checking helper call with id %d\n", func_id);
+	printk(KERN_DEBUG "checking helper call with id %d, name %s\n", func_id, func_id_name(func_id));
 	/* check args */
 	err = check_func_arg(env, BPF_REG_1, fn->arg1_type, &meta);
 	if (err)
+	{
+		printk(KERN_DEBUG "failed on first argument\n");
 		return err;
+	}
+		
 	err = check_func_arg(env, BPF_REG_2, fn->arg2_type, &meta);
 	if (err)
 		return err;
