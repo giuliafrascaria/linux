@@ -3678,7 +3678,7 @@ static bool check_refcount_ok(const struct bpf_func_proto *fn, int func_id)
 
 static int check_func_proto(const struct bpf_func_proto *fn, int func_id)
 {
-	printk(KERN_DEBUG "check func proto\n");
+	printk(KERN_DEBUG "check func proto raw=%d, arg pair=%d, refcount=%d\n", check_raw_mode_ok(fn), check_arg_pair_ok(fn), check_refcount_ok(fn, func_id));
 	return check_raw_mode_ok(fn) &&
 	       check_arg_pair_ok(fn) &&
 	       check_refcount_ok(fn, func_id) ? 0 : -EINVAL;
@@ -3987,6 +3987,7 @@ static int check_helper_call(struct bpf_verifier_env *env, int func_id, int insn
 	if (err) {
 		verbose(env, "kernel subsystem misconfigured func %s#%d\n",
 			func_id_name(func_id), func_id);
+		printk(KERN_DEBUG "misconfiguration\n");
 		return err;
 	}
 
