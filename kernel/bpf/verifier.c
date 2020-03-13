@@ -3325,6 +3325,7 @@ static int check_func_arg(struct bpf_verifier_env *env, u32 regno,
 			 type != expected_type)
 		{
 			printk(KERN_DEBUG "is this where it fails?\n");
+			printk(KERN_DEBUG "type=%d, expected=%d, is_pkt=%d\n", type, expected_type, type_is_pkt_pointer(type));
 			goto err_type;
 		}
 		meta->raw_mode = arg_type == ARG_PTR_TO_UNINIT_MEM;
