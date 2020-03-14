@@ -7958,6 +7958,9 @@ static int replace_map_fd_with_map_ptr(struct bpf_verifier_env *env)
 
 			f = fdget(insn[0].imm);
 			map = __bpf_map_get(f);
+
+			printk(KERN_DEBUG "why would I even be here\n");
+			
 			if (IS_ERR(map)) {
 				verbose(env, "fd %d is not pointing to valid bpf_map\n",
 					insn[0].imm);
