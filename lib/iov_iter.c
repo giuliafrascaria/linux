@@ -144,6 +144,16 @@ static int copyout(void __user *to, const void *from, size_t n)
 	return n;
 }
 
+static int copyout_bpf(void __user *to, const void *from, size_t n)
+{
+	if (access_ok(to, n)) {
+		kasan_check_read(from, n);
+		n = raw_copy_to_user(to, from, n);
+	}
+	return n;
+}
+EXPORT_SYMBOL(copyout_bpf);
+
 static int copyin(void *to, const void __user *from, size_t n)
 {
 	if (access_ok(from, n)) {
