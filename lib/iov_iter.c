@@ -9,6 +9,7 @@
 #include <net/checksum.h>
 #include <linux/scatterlist.h>
 #include <linux/kernel.h>
+#include <linux/error-injection.h>
 
 #define PIPE_PARANOIA /* for now */
 
