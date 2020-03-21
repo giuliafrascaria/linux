@@ -154,6 +154,7 @@ static int copyout_bpf(void __user *to, const void *from, size_t n)
 	return n;
 }
 EXPORT_SYMBOL(copyout_bpf);
+ALLOW_ERROR_INJECTION(copyout_bpf, ERRNO);
 
 static int copyin(void *to, const void __user *from, size_t n)
 {

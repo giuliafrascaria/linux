@@ -3311,7 +3311,7 @@ static int check_func_arg(struct bpf_verifier_env *env, u32 regno,
 			return -EFAULT;
 		}
 	} else if (arg_type_is_mem_ptr(arg_type)) {
-		printk(KERN_DEBUG "arg type is mem ptr\n");
+		//printk(KERN_DEBUG "arg type is mem ptr\n");
 		expected_type = PTR_TO_STACK;
 		/* One exception here. In case function allows for NULL to be
 		 * passed in as argument, it's a SCALAR_VALUE type. Final test
@@ -3679,7 +3679,7 @@ static bool check_refcount_ok(const struct bpf_func_proto *fn, int func_id)
 
 static int check_func_proto(const struct bpf_func_proto *fn, int func_id)
 {
-	printk(KERN_DEBUG "check func proto raw=%d, arg pair=%d, refcount=%d\n", check_raw_mode_ok(fn), check_arg_pair_ok(fn), check_refcount_ok(fn, func_id));
+	//printk(KERN_DEBUG "check func proto raw=%d, arg pair=%d, refcount=%d\n", check_raw_mode_ok(fn), check_arg_pair_ok(fn), check_refcount_ok(fn, func_id));
 	return check_raw_mode_ok(fn) &&
 	       check_arg_pair_ok(fn) &&
 	       check_refcount_ok(fn, func_id) ? 0 : -EINVAL;
@@ -3993,12 +3993,12 @@ static int check_helper_call(struct bpf_verifier_env *env, int func_id, int insn
 	}
 
 	meta.func_id = func_id;
-	printk(KERN_DEBUG "checking helper call with id %d, name %s\n", func_id, func_id_name(func_id));
+	//printk(KERN_DEBUG "checking helper call with id %d, name %s\n", func_id, func_id_name(func_id));
 	/* check args */
 	err = check_func_arg(env, BPF_REG_1, fn->arg1_type, &meta);
 	if (err)
 	{
-		printk(KERN_DEBUG "failed on first argument\n");
+		//printk(KERN_DEBUG "failed on first argument\n");
 		return err;
 	}
 		
@@ -7720,7 +7720,7 @@ static int do_check(struct bpf_verifier_env *env)
 					verbose(env, "function calls are not allowed while holding a lock\n");
 					return -EINVAL;
 				}
-				printk(KERN_DEBUG "do_check for BPF_CALL\n");
+				//printk(KERN_DEBUG "do_check for BPF_CALL\n");
 				if (insn->src_reg == BPF_PSEUDO_CALL)
 					err = check_func_call(env, insn, &env->insn_idx);
 				else
@@ -7959,7 +7959,7 @@ static int replace_map_fd_with_map_ptr(struct bpf_verifier_env *env)
 			f = fdget(insn[0].imm);
 			map = __bpf_map_get(f);
 
-			printk(KERN_DEBUG "why would I even be here\n");
+			//printk(KERN_DEBUG "why would I even be here\n");
 			
 			if (IS_ERR(map)) {
 				verbose(env, "fd %d is not pointing to valid bpf_map\n",
