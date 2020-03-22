@@ -152,10 +152,12 @@ static int copyout_bpf(void __user *to, const void *from, size_t n)
 		kasan_check_read(from, n);
 		n = raw_copy_to_user(to, from, n);
 	}
+	printk(KERN_DEBUG "returning from copyout with n = %d\n", n);
 	return n;
 }
-EXPORT_SYMBOL(copyout_bpf);
 ALLOW_ERROR_INJECTION(copyout_bpf, ERRNO);
+EXPORT_SYMBOL(copyout_bpf);
+
 
 static int copyin(void *to, const void __user *from, size_t n)
 {

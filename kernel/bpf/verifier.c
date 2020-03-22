@@ -3324,8 +3324,8 @@ static int check_func_arg(struct bpf_verifier_env *env, u32 regno,
 			 type != PTR_TO_MAP_VALUE &&
 			 type != expected_type)
 		{
-			printk(KERN_DEBUG "is this where it fails?\n");
-			printk(KERN_DEBUG "type=%d, expected=%d, is_pkt=%d\n", type, expected_type, type_is_pkt_pointer(type));
+			//printk(KERN_DEBUG "is this where it fails?\n");
+			//printk(KERN_DEBUG "type=%d, expected=%d, is_pkt=%d\n", type, expected_type, type_is_pkt_pointer(type));
 			goto err_type;
 		}
 		meta->raw_mode = arg_type == ARG_PTR_TO_UNINIT_MEM;
@@ -3988,7 +3988,7 @@ static int check_helper_call(struct bpf_verifier_env *env, int func_id, int insn
 	if (err) {
 		verbose(env, "kernel subsystem misconfigured func %s#%d\n",
 			func_id_name(func_id), func_id);
-		printk(KERN_DEBUG "misconfiguration\n");
+		//printk(KERN_DEBUG "misconfiguration\n");
 		return err;
 	}
 
