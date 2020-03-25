@@ -21,6 +21,7 @@
 #include <linux/mount.h>
 #include <linux/fs.h>
 #include "internal.h"
+#include <linux/error-injection.h>
 
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
@@ -591,6 +592,7 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 	}
 	return ret;
 }
+ALLOW_ERROR_INJECTION(ksys_read, ERRNO);
 
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
