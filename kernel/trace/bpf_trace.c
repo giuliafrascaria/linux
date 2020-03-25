@@ -408,6 +408,24 @@ static const struct bpf_func_proto bpf_my_printk_proto = {
 	.ret_type	= RET_INTEGER,
 };
 
+BPF_CALL_2(bpf_dmesg_print, const char *, buf, unsigned int, size)
+{
+	if (size > 1)
+	{
+		printk(KERN_DEBUG "%s\n", buf);
+	}
+
+	return (int) 1;
+}
+
+static const struct bpf_func_proto bpf_dmesg_print_proto = {
+	.func		= bpf_dmesg_print,
+	.gpl_only	= true,
+	.arg1_type	= ARG_CONST_MAP_PTR,
+	.arg2_type	= ARG_CONST_SIZE,
+	.ret_type	= RET_INTEGER,
+};
+
 
 BPF_CALL_3(bpf_kstrtol, const char *, buf, unsigned int, base, long *, res)
 {
@@ -800,6 +818,8 @@ kprobe_prog_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 		return &bpf_perf_event_read_value_proto;
 	case BPF_FUNC_my_printk:
 		return &bpf_my_printk_proto;
+	case BPF_FUNC_dmesg_print:
+		return &bpf_dmesg_proto;
 	case BPF_FUNC_kstrtol:
 		return &bpf_kstrtol_proto;
 #ifdef CONFIG_BPF_KPROBE_OVERRIDE

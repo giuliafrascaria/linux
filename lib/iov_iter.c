@@ -152,7 +152,7 @@ static int copyout_bpf(void __user *to, const void *from, size_t n)
 		kasan_check_read(from, n);
 		n = raw_copy_to_user(to, from, n);
 	}
-	printk(KERN_DEBUG "returning from copyout with n = %d\n", n);
+	// printk(KERN_DEBUG "returning from copyout with n = %d\n", n);
 	return n;
 }
 ALLOW_ERROR_INJECTION(copyout_bpf, ERRNO);
@@ -292,6 +292,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 			//go through my own
 			//printk(KERN_DEBUG "parallel read path %lu\n", (long unsigned int) from);
 			left = copyout_bpf(buf, from, copy);
+			printk(KERN_DEBUG "2 returned from copyout with %d\n", left);
 		}
 		
 		copy -= left;
@@ -304,6 +305,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 			buf = iov->iov_base;
 			copy = min(bytes, iov->iov_len);
 			left = copyout_bpf(buf, from, copy);
+			printk(KERN_DEBUG "3 returned from copyout with %d\n", left);
 			copy -= left;
 			skip = copy;
 			from += copy;
@@ -335,6 +337,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		//go through my own
 		//printk(KERN_DEBUG "parallel read path 1 %lu\n", (long unsigned int) from);
 		left = copyout_bpf(buf, from, copy);
+		printk(KERN_DEBUG "1 returned from copyout with %d\n", left);
 	}
 
 	copy -= left;
@@ -346,6 +349,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		buf = iov->iov_base;
 		copy = min(bytes, iov->iov_len);
 		left = copyout_bpf(buf, from, copy);
+		printk(KERN_DEBUG "4 returned from copyout with %d\n", left);
 		copy -= left;
 		skip = copy;
 		from += copy;
