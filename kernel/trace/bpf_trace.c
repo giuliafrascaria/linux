@@ -819,7 +819,7 @@ kprobe_prog_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 	case BPF_FUNC_my_printk:
 		return &bpf_my_printk_proto;
 	case BPF_FUNC_dmesg_print:
-		return &bpf_dmesg_proto;
+		return &bpf_dmesg_print_proto;
 	case BPF_FUNC_kstrtol:
 		return &bpf_kstrtol_proto;
 #ifdef CONFIG_BPF_KPROBE_OVERRIDE
