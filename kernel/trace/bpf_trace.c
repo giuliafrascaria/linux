@@ -410,9 +410,13 @@ static const struct bpf_func_proto bpf_my_printk_proto = {
 
 BPF_CALL_2(bpf_dmesg_print, const char *, buf, unsigned int, size)
 {
-	if (size > 1)
+	const int MAXSIZE = 16;
+	char printbuff[MAXSIZE];
+
+	if (size >= 16)
 	{
-		printk(KERN_DEBUG "%s\n", buf);
+		snprintf(printbuff, MAXSIZE, "%s", buf);
+		printk(KERN_DEBUG "%s\n", printbuff);
 	}
 
 	return (int) 1;
