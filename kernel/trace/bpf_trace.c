@@ -415,8 +415,13 @@ BPF_CALL_2(bpf_dmesg_print, const char *, buf, int, size)
 
 	printk(KERN_DEBUG "here\n");
 
-	snprintf(printbuff, MAXSIZE, "%s", buf);
-	printk(KERN_DEBUG "%s\n", printbuff);
+	if (buf != NULL)
+	{
+		printk(KERN_DEBUG "here 2\n");
+		snprintf(printbuff, MAXSIZE, "%s", buf);
+		printk(KERN_DEBUG "%s\n", printbuff);
+	}
+
 
 	return size;
 }
