@@ -408,18 +408,17 @@ static const struct bpf_func_proto bpf_my_printk_proto = {
 	.ret_type	= RET_INTEGER,
 };
 
-BPF_CALL_2(bpf_dmesg_print, const char *, buf, unsigned int, size)
+BPF_CALL_2(bpf_dmesg_print, const char *, buf, int, size)
 {
 	const int MAXSIZE = 16;
 	char printbuff[MAXSIZE];
 
-	if (size >= 16)
-	{
-		snprintf(printbuff, MAXSIZE, "%s", buf);
-		printk(KERN_DEBUG "%s\n", printbuff);
-	}
+	printk(KERN_DEBUG "here\n");
 
-	return (int) 1;
+	snprintf(printbuff, MAXSIZE, "%s", buf);
+	printk(KERN_DEBUG "%s\n", printbuff);
+
+	return size;
 }
 
 static const struct bpf_func_proto bpf_dmesg_print_proto = {
