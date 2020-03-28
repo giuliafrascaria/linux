@@ -275,25 +275,18 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	buf = iov->iov_base + skip;
 	copy = min(bytes, iov->iov_len - skip);
 
+	printk(KERN_DEBUG "iovec copying %d\n", copy);
+
 	if (IS_ENABLED(CONFIG_HIGHMEM) && !fault_in_pages_writeable(buf, copy)) {
 		//printk(KERN_DEBUG "config highmem enabled\n");
 		kaddr = kmap_atomic(page);
 		from = kaddr + offset;
 
 		/* first chunk, usually the only one */
-		if (copy == 42)
-		{
-			//leave a way to go through normal path just in case
-			//printk(KERN_DEBUG "normal copyout %lu\n", (long unsigned int) from);
-			left = copyout(buf, from, copy);
-		}
-		else 
-		{
-			//go through my own
-			//printk(KERN_DEBUG "parallel read path %lu\n", (long unsigned int) from);
-			left = copyout_bpf(buf, from, copy);
-			//printk(KERN_DEBUG "2 returned from copyout with %d\n", left);
-		}
+
+		//printk(KERN_DEBUG "parallel read path %lu\n", (long unsigned int) from);
+		left = copyout_bpf(buf, from, copy);
+		//printk(KERN_DEBUG "2 returned from copyout with %d\n", left);
 		
 		copy -= left;
 		skip += copy;
@@ -326,19 +319,12 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	from = kaddr + offset;
 	
 
-	if (copy == 42)
-	{
-		//leave a way to go through normal path just in case
-		//printk(KERN_DEBUG "normal copyout 1 %lu\n", (long unsigned int) from);
-		left = copyout(buf, from, copy);
-	}
-	else 
-	{
-		//go through my own
-		//printk(KERN_DEBUG "parallel read path 1 %lu\n", (long unsigned int) from);
-		left = copyout_bpf(buf, from, copy);
-		//printk(KERN_DEBUG "1 returned from copyout with %d\n", left);
-	}
+	
+	//printk(KERN_DEBUG "parallel read path 1 %lu\n", (long unsigned int) from);
+	left = copyout_bpf(buf, from, copy);
+	//printk(KERN_DEBUG "1 returned from copyout with %d\n", left);
+	
+	//meant to return 0 if all is correct, so it doesn't loop further
 
 	copy -= left;
 	skip += copy;
@@ -366,7 +352,7 @@ done:
 	i->nr_segs -= iov - i->iov;
 	i->iov = iov;
 	i->iov_offset = skip;
-	return wanted - bytes;
+	return wanted - bytes; // so I'm guessing bytes is 0 at this point, in case of success
 }
 EXPORT_SYMBOL(copy_page_to_iter_iovec_bpf);
 

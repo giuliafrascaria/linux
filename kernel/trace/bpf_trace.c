@@ -408,29 +408,33 @@ static const struct bpf_func_proto bpf_my_printk_proto = {
 	.ret_type	= RET_INTEGER,
 };
 
-BPF_CALL_2(bpf_dmesg_print, const char *, buf, int, size)
+BPF_CALL_2(bpf_dmesg_print, const char *, buf, ssize_t, len)
 {
-	const int MAXSIZE = 16;
-	char printbuff[MAXSIZE];
+	const char *local_buf = buf;
+	char output[64];
 
 	printk(KERN_DEBUG "here\n");
 
-	if (buf != NULL)
-	{
-		printk(KERN_DEBUG "here 2\n");
-		snprintf(printbuff, MAXSIZE, "%s", buf);
-		printk(KERN_DEBUG "%s\n", printbuff);
-	}
+	if(!buf || !len)
+		return -EINVAL;
 
+	if(len > 64)
+		return -EINVAL;
 
-	return size;
+	printk(KERN_DEBUG "here 2\n");
+	memcpy(output, buf, len);
+
+	output[len] = '\0';
+
+	printk(KERN_DEBUG "%s\n", output);
+
+	return (int) 0;
 }
 
 static const struct bpf_func_proto bpf_dmesg_print_proto = {
 	.func		= bpf_dmesg_print,
 	.gpl_only	= true,
 	.arg1_type	= ARG_CONST_MAP_PTR,
-	.arg2_type	= ARG_CONST_SIZE,
 	.ret_type	= RET_INTEGER,
 };
 
