@@ -148,11 +148,16 @@ static int copyout(void __user *to, const void *from, size_t n)
 
 static int copyout_bpf(void __user *to, const void *from, size_t n)
 {
+	if(n == 9)
+	{
+		printk(KERN_DEBUG "for some reason I just executed anyway LOL\n", n);
+	}
+
 	if (access_ok(to, n)) {
 		kasan_check_read(from, n);
 		n = raw_copy_to_user(to, from, n);
 	}
-	// printk(KERN_DEBUG "returning from copyout with n = %d\n", n);
+	
 	return n;
 }
 ALLOW_ERROR_INJECTION(copyout_bpf, ERRNO);
@@ -293,7 +298,8 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		from += copy;
 		bytes -= copy;
 
-		while (unlikely(!left && bytes)) {
+		//while (unlikely(!left && bytes)) {
+		while (likely(!left && bytes)) {
 			iov++;
 			buf = iov->iov_base;
 			copy = min(bytes, iov->iov_len);
@@ -304,7 +310,8 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 			from += copy;
 			bytes -= copy;
 		}
-		if (likely(!bytes)) {
+		//if (likely(!bytes)) {
+		if (unlikely(!bytes)) {
 			kunmap_atomic(kaddr);
 			goto done;
 		}
@@ -330,7 +337,8 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	skip += copy;
 	from += copy;
 	bytes -= copy;
-	while (unlikely(!left && bytes)) {
+	//while (unlikely(!left && bytes)) {
+	while (likely(!left && bytes)) {
 		iov++;
 		buf = iov->iov_base;
 		copy = min(bytes, iov->iov_len);
