@@ -148,7 +148,7 @@ static int copyout(void __user *to, const void *from, size_t n)
 
 static int copyout_bpf(void __user *to, const void *from, size_t n)
 {
-	if(n == 9)
+	if(n == 4095)
 	{
 		printk(KERN_DEBUG "for some reason I just executed anyway LOL\n", n);
 	}
@@ -280,16 +280,15 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	buf = iov->iov_base + skip;
 	copy = min(bytes, iov->iov_len - skip);
 
-	printk(KERN_DEBUG "iovec copying %d\n", copy);
+	//printk(KERN_DEBUG "iovec copying %d\n", copy);
 
 	if (IS_ENABLED(CONFIG_HIGHMEM) && !fault_in_pages_writeable(buf, copy)) {
-		//printk(KERN_DEBUG "config highmem enabled\n");
+		
 		kaddr = kmap_atomic(page);
 		from = kaddr + offset;
 
 		/* first chunk, usually the only one */
 
-		//printk(KERN_DEBUG "parallel read path %lu\n", (long unsigned int) from);
 		left = copyout_bpf(buf, from, copy);
 		//printk(KERN_DEBUG "2 returned from copyout with %d\n", left);
 		
@@ -298,8 +297,8 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		from += copy;
 		bytes -= copy;
 
-		//while (unlikely(!left && bytes)) {
-		while (likely(!left && bytes)) {
+		while (unlikely(!left && bytes)) {
+		//while (likely(!left && bytes)) {
 			iov++;
 			buf = iov->iov_base;
 			copy = min(bytes, iov->iov_len);
@@ -310,10 +309,10 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 			from += copy;
 			bytes -= copy;
 		}
-		//if (likely(!bytes)) {
-		if (unlikely(!bytes)) {
+		if (likely(!bytes)) {
+		//if (unlikely(!bytes)) {
 			kunmap_atomic(kaddr);
-			goto done;
+				goto done;
 		}
 		offset = from - kaddr;
 		buf += copy;
@@ -321,15 +320,11 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		copy = min(bytes, iov->iov_len - skip);
 	}
 	/* Too bad - revert to non-atomic kmap */
-	//printk(KERN_DEBUG "non atomic\n");
 	kaddr = kmap(page);
 	from = kaddr + offset;
 	
-
 	
-	//printk(KERN_DEBUG "parallel read path 1 %lu\n", (long unsigned int) from);
 	left = copyout_bpf(buf, from, copy);
-	//printk(KERN_DEBUG "1 returned from copyout with %d\n", left);
 	
 	//meant to return 0 if all is correct, so it doesn't loop further
 
@@ -337,8 +332,8 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	skip += copy;
 	from += copy;
 	bytes -= copy;
-	//while (unlikely(!left && bytes)) {
-	while (likely(!left && bytes)) {
+	while (unlikely(!left && bytes)) {
+	//while (likely(!left && bytes)) {
 		iov++;
 		buf = iov->iov_base;
 		copy = min(bytes, iov->iov_len);
