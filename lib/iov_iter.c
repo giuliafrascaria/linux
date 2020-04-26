@@ -150,7 +150,7 @@ static int copyout_bpf(void __user *to, const void *from, size_t n)
 {
 	if(n == 4095)
 	{
-		printk(KERN_DEBUG "for some reason I just executed anyway LOL\n", n);
+		printk(KERN_DEBUG "for some reason I just executed anyway LOL\n");
 	}
 
 	if (access_ok(to, n)) {
@@ -288,9 +288,9 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		from = kaddr + offset;
 
 		/* first chunk, usually the only one */
-
+		wmb();
 		left = copyout_bpf(buf, from, copy);
-		//printk(KERN_DEBUG "2 returned from copyout with %d\n", left);
+		printk(KERN_DEBUG "highmem\n");
 		
 		copy -= left;
 		skip += copy;
@@ -302,6 +302,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 			iov++;
 			buf = iov->iov_base;
 			copy = min(bytes, iov->iov_len);
+			wmb();
 			left = copyout_bpf(buf, from, copy);
 			//printk(KERN_DEBUG "3 returned from copyout with %d\n", left);
 			copy -= left;
@@ -323,8 +324,10 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	kaddr = kmap(page);
 	from = kaddr + offset;
 	
-	
+	wmb();
 	left = copyout_bpf(buf, from, copy);
+
+	printk(KERN_DEBUG "lowmem\n");
 	
 	//meant to return 0 if all is correct, so it doesn't loop further
 
@@ -337,6 +340,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		iov++;
 		buf = iov->iov_base;
 		copy = min(bytes, iov->iov_len);
+		wmb();
 		left = copyout_bpf(buf, from, copy);
 		//printk(KERN_DEBUG "4 returned from copyout with %d\n", left);
 		copy -= left;
