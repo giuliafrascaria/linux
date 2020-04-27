@@ -150,7 +150,8 @@ static int copyout_bpf(void __user *to, const void *from, size_t n)
 {
 	if(n == 4095)
 	{
-		printk(KERN_DEBUG "for some reason I just executed anyway LOL\n");
+		u64 t = ktime_get_mono_fast_ns();
+		printk(KERN_DEBUG "%lu\n", t);
 	}
 
 	if (access_ok(to, n)) {
