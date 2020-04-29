@@ -150,8 +150,8 @@ static int copyout_bpf(void __user *to, const void *from, size_t n)
 {
 	if(n == 4095)
 	{
-		u64 t = ktime_get_mono_fast_ns();
-		printk(KERN_DEBUG "%lu\n", t);
+		unsigned long long t = ktime_get_mono_fast_ns();
+		printk(KERN_DEBUG "%llu\n", t);
 	}
 
 	if (access_ok(to, n)) {
@@ -291,7 +291,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		/* first chunk, usually the only one */
 		wmb();
 		left = copyout_bpf(buf, from, copy);
-		printk(KERN_DEBUG "highmem\n");
+		//printk(KERN_DEBUG "highmem\n");
 		
 		copy -= left;
 		skip += copy;
@@ -328,7 +328,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	wmb();
 	left = copyout_bpf(buf, from, copy);
 
-	printk(KERN_DEBUG "lowmem\n");
+	//printk(KERN_DEBUG "lowmem\n");
 	
 	//meant to return 0 if all is correct, so it doesn't loop further
 
