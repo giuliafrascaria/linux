@@ -151,7 +151,7 @@ static int copyout_bpf(void __user *to, const void *from, size_t n)
 	if(n == 4095)
 	{
 		unsigned long long t = ktime_get_mono_fast_ns();
-		printk(KERN_DEBUG "%llu\n", t);
+		printk(KERN_DEBUG "%llu, failed\n", t);
 	}
 
 	if (access_ok(to, n)) {
@@ -290,6 +290,13 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 
 		/* first chunk, usually the only one */
 		wmb();
+
+		if(n == 4095)
+		{
+			unsigned long long t = ktime_get_mono_fast_ns();
+			printk(KERN_DEBUG "%llu, iov\n", t);
+		}
+
 		left = copyout_bpf(buf, from, copy);
 		//printk(KERN_DEBUG "highmem\n");
 		
@@ -304,6 +311,13 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 			buf = iov->iov_base;
 			copy = min(bytes, iov->iov_len);
 			wmb();
+
+			if(n == 4095)
+			{
+				unsigned long long t = ktime_get_mono_fast_ns();
+				printk(KERN_DEBUG "%llu, iov\n", t);
+			}
+
 			left = copyout_bpf(buf, from, copy);
 			//printk(KERN_DEBUG "3 returned from copyout with %d\n", left);
 			copy -= left;
@@ -326,6 +340,13 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	from = kaddr + offset;
 	
 	wmb();
+
+	if(n == 4095)
+	{
+		unsigned long long t = ktime_get_mono_fast_ns();
+		printk(KERN_DEBUG "%llu, iov\n", t);
+	}
+
 	left = copyout_bpf(buf, from, copy);
 
 	//printk(KERN_DEBUG "lowmem\n");
@@ -342,6 +363,13 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		buf = iov->iov_base;
 		copy = min(bytes, iov->iov_len);
 		wmb();
+
+		if(n == 4095)
+		{
+			unsigned long long t = ktime_get_mono_fast_ns();
+			printk(KERN_DEBUG "%llu, iov\n", t);
+		}
+
 		left = copyout_bpf(buf, from, copy);
 		//printk(KERN_DEBUG "4 returned from copyout with %d\n", left);
 		copy -= left;
