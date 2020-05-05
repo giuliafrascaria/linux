@@ -291,7 +291,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		/* first chunk, usually the only one */
 		wmb();
 
-		if(n == 4095)
+		if(copy == 4095)
 		{
 			unsigned long long t = ktime_get_mono_fast_ns();
 			printk(KERN_DEBUG "%llu, iov\n", t);
@@ -312,7 +312,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 			copy = min(bytes, iov->iov_len);
 			wmb();
 
-			if(n == 4095)
+			if(copy == 4095)
 			{
 				unsigned long long t = ktime_get_mono_fast_ns();
 				printk(KERN_DEBUG "%llu, iov\n", t);
@@ -341,7 +341,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 	
 	wmb();
 
-	if(n == 4095)
+	if(copy == 4095)
 	{
 		unsigned long long t = ktime_get_mono_fast_ns();
 		printk(KERN_DEBUG "%llu, iov\n", t);
@@ -364,7 +364,7 @@ static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size
 		copy = min(bytes, iov->iov_len);
 		wmb();
 
-		if(n == 4095)
+		if(copy == 4095)
 		{
 			unsigned long long t = ktime_get_mono_fast_ns();
 			printk(KERN_DEBUG "%llu, iov\n", t);
