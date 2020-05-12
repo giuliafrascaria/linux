@@ -145,17 +145,6 @@ static int copyout(void __user *to, const void *from, size_t n)
 	return n;
 }
 
-static int copyout_bpf(void __user *to, const void *from, size_t n)
-{
-	if (access_ok(to, n)) {
-		kasan_check_read(from, n);
-		n = raw_copy_to_user(to, from, n);
-	}
-	return n;
-}
-ALLOW_ERROR_INJECTION(copyout_bpf, ERRNO);
-EXPORT_SYMBOL(copyout_bpf);
-
 static int copyin(void *to, const void __user *from, size_t n)
 {
 	if (access_ok(from, n)) {
@@ -248,139 +237,6 @@ done:
 	i->iov_offset = skip;
 	return wanted - bytes;
 }
-
-static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size_t bytes,
-			 struct iov_iter *i)
-{
-	//printk(KERN_DEBUG "iovec\n");
-	size_t skip, copy, left, wanted;
-	const struct iovec *iov;
-	char __user *buf;
-	void *kaddr, *from;
-
-	if (unlikely(bytes > i->count))
-		bytes = i->count;
-
-	if (unlikely(!bytes))
-		return 0;
-
-	might_fault();
-	wanted = bytes;
-	iov = i->iov;
-	skip = i->iov_offset;
-	buf = iov->iov_base + skip;
-	copy = min(bytes, iov->iov_len - skip);
-
-	//printk(KERN_DEBUG "iovec copying %d\n", copy);
-
-	if (IS_ENABLED(CONFIG_HIGHMEM) && !fault_in_pages_writeable(buf, copy)) {
-		
-		kaddr = kmap_atomic(page);
-		from = kaddr + offset;
-
-		/* first chunk, usually the only one */
-		wmb();
-
-		if(copy == 4095)
-		{
-			unsigned long long t = ktime_get_mono_fast_ns();
-			printk(KERN_DEBUG "%llu, iov\n", t);
-		}
-
-		left = copyout_bpf(buf, from, copy);
-		//printk(KERN_DEBUG "highmem\n");
-		
-		copy -= left;
-		skip += copy;
-		from += copy;
-		bytes -= copy;
-
-		while (unlikely(!left && bytes)) {
-		//while (likely(!left && bytes)) {
-			iov++;
-			buf = iov->iov_base;
-			copy = min(bytes, iov->iov_len);
-			wmb();
-
-			if(copy == 4095)
-			{
-				unsigned long long t = ktime_get_mono_fast_ns();
-				printk(KERN_DEBUG "%llu, iov\n", t);
-			}
-
-			left = copyout_bpf(buf, from, copy);
-			//printk(KERN_DEBUG "3 returned from copyout with %d\n", left);
-			copy -= left;
-			skip = copy;
-			from += copy;
-			bytes -= copy;
-		}
-		if (likely(!bytes)) {
-		//if (unlikely(!bytes)) {
-			kunmap_atomic(kaddr);
-				goto done;
-		}
-		offset = from - kaddr;
-		buf += copy;
-		kunmap_atomic(kaddr);
-		copy = min(bytes, iov->iov_len - skip);
-	}
-	/* Too bad - revert to non-atomic kmap */
-	kaddr = kmap(page);
-	from = kaddr + offset;
-	
-	wmb();
-
-	if(copy == 4095)
-	{
-		unsigned long long t = ktime_get_mono_fast_ns();
-		printk(KERN_DEBUG "%llu, iov\n", t);
-	}
-
-	left = copyout_bpf(buf, from, copy);
-
-	//printk(KERN_DEBUG "lowmem\n");
-	
-	//meant to return 0 if all is correct, so it doesn't loop further
-
-	copy -= left;
-	skip += copy;
-	from += copy;
-	bytes -= copy;
-	while (unlikely(!left && bytes)) {
-	//while (likely(!left && bytes)) {
-		iov++;
-		buf = iov->iov_base;
-		copy = min(bytes, iov->iov_len);
-		wmb();
-
-		if(copy == 4095)
-		{
-			unsigned long long t = ktime_get_mono_fast_ns();
-			printk(KERN_DEBUG "%llu, iov\n", t);
-		}
-
-		left = copyout_bpf(buf, from, copy);
-		//printk(KERN_DEBUG "4 returned from copyout with %d\n", left);
-		copy -= left;
-		skip = copy;
-		from += copy;
-		bytes -= copy;
-	}
-	kunmap(page);
-
-done:
-	if (skip == iov->iov_len) {
-		iov++;
-		skip = 0;
-	}
-	i->count -= wanted - bytes;
-	i->nr_segs -= iov - i->iov;
-	i->iov = iov;
-	i->iov_offset = skip;
-	return wanted - bytes; // so I'm guessing bytes is 0 at this point, in case of success
-}
-EXPORT_SYMBOL(copy_page_to_iter_iovec_bpf);
 
 static size_t copy_page_from_iter_iovec(struct page *page, size_t offset, size_t bytes,
 			 struct iov_iter *i)
@@ -780,24 +636,6 @@ size_t _copy_to_iter(const void *addr, size_t bytes, struct iov_iter *i)
 }
 EXPORT_SYMBOL(_copy_to_iter);
 
-size_t _copy_to_iter_bpf(const void *addr, size_t bytes, struct iov_iter *i)
-{
-	const char *from = addr;
-	if (unlikely(iov_iter_is_pipe(i)))
-		return copy_pipe_to_iter(addr, bytes, i);
-	if (iter_is_iovec(i))
-		might_fault();
-	iterate_and_advance(i, bytes, v,
-		copyout_bpf(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len),
-		memcpy_to_page(v.bv_page, v.bv_offset,
-			       (from += v.bv_len) - v.bv_len, v.bv_len),
-		memcpy(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len)
-	)
-
-	return bytes;
-}
-EXPORT_SYMBOL(_copy_to_iter_bpf);
-
 #ifdef CONFIG_ARCH_HAS_UACCESS_MCSAFE
 static int copyout_mcsafe(void __user *to, const void *from, size_t n)
 {
@@ -1094,13 +932,13 @@ size_t copy_page_to_iter_bpf(struct page *page, size_t offset, size_t bytes,
 		return 0;
 	if (i->type & (ITER_BVEC|ITER_KVEC)) {
 		void *kaddr = kmap_atomic(page);
-		size_t wanted = copy_to_iter_bpf(kaddr + offset, bytes, i);
+		size_t wanted = copy_to_iter(kaddr + offset, bytes, i);
 		kunmap_atomic(kaddr);
 		return wanted;
 	} else if (unlikely(iov_iter_is_discard(i)))
 		return bytes;
 	else if (likely(!iov_iter_is_pipe(i)))
-		return copy_page_to_iter_iovec_bpf(page, offset, bytes, i);
+		return copy_page_to_iter_iovec(page, offset, bytes, i);
 	else
 		return copy_page_to_iter_pipe(page, offset, bytes, i);
 }
