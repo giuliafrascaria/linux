@@ -136,6 +136,15 @@
 	}							\
 }
 
+static noinline __must_check
+size_t copy_to_iter_bpf(const void *addr, size_t bytes, struct iov_iter *i)
+{
+	if (unlikely(!check_copy_size(addr, bytes, true)))
+		return 0;
+	else
+		return _copy_to_iter_bpf(addr, bytes, i);
+}
+
 static int copyout(void __user *to, const void *from, size_t n)
 {
 	if (access_ok(to, n)) {
@@ -814,7 +823,23 @@ size_t _copy_to_iter_bpf(const void *addr, size_t bytes, struct iov_iter *i)
 }
 EXPORT_SYMBOL(_copy_to_iter_bpf);
 
+size_t _copy_to_iter(const void *addr, size_t bytes, struct iov_iter *i)
+{
+	const char *from = addr;
+	if (unlikely(iov_iter_is_pipe(i)))
+		return copy_pipe_to_iter(addr, bytes, i);
+	if (iter_is_iovec(i))
+		might_fault();
+	iterate_and_advance(i, bytes, v,
+		copyout(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len),
+		memcpy_to_page(v.bv_page, v.bv_offset,
+			       (from += v.bv_len) - v.bv_len, v.bv_len),
+		memcpy(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len)
+	)
 
+	return bytes;
+}
+EXPORT_SYMBOL(_copy_to_iter);
 
 #ifdef CONFIG_ARCH_HAS_UACCESS_MCSAFE
 static int copyout_mcsafe(void __user *to, const void *from, size_t n)
