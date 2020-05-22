@@ -145,6 +145,17 @@ static int copyout(void __user *to, const void *from, size_t n)
 	return n;
 }
 
+static int copyout_bpf(void __user *to, const void *from, size_t n)
+{
+	if (access_ok(to, n)) {
+		kasan_check_read(from, n);
+		n = raw_copy_to_user(to, from, n);
+	}
+	return n;
+}
+ALLOW_ERROR_INJECTION(copyout_bpf, ERRNO);
+EXPORT_SYMBOL(copyout_bpf);
+
 static int copyin(void *to, const void __user *from, size_t n)
 {
 	if (access_ok(from, n)) {
@@ -237,6 +248,92 @@ done:
 	i->iov_offset = skip;
 	return wanted - bytes;
 }
+
+static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size_t bytes,
+			 struct iov_iter *i)
+{
+	size_t skip, copy, left, wanted;
+	const struct iovec *iov;
+	char __user *buf;
+	void *kaddr, *from;
+
+	if (unlikely(bytes > i->count))
+		bytes = i->count;
+
+	if (unlikely(!bytes))
+		return 0;
+
+	might_fault();
+	wanted = bytes;
+	iov = i->iov;
+	skip = i->iov_offset;
+	buf = iov->iov_base + skip;
+	copy = min(bytes, iov->iov_len - skip);
+
+	if (IS_ENABLED(CONFIG_HIGHMEM) && !fault_in_pages_writeable(buf, copy)) {
+		kaddr = kmap_atomic(page);
+		from = kaddr + offset;
+
+		/* first chunk, usually the only one */
+		left = copyout_bpf(buf, from, copy);
+		copy -= left;
+		skip += copy;
+		from += copy;
+		bytes -= copy;
+
+		while (unlikely(!left && bytes)) {
+			iov++;
+			buf = iov->iov_base;
+			copy = min(bytes, iov->iov_len);
+			left = copyout_bpf(buf, from, copy);
+			copy -= left;
+			skip = copy;
+			from += copy;
+			bytes -= copy;
+		}
+		if (likely(!bytes)) {
+			kunmap_atomic(kaddr);
+			goto done;
+		}
+		offset = from - kaddr;
+		buf += copy;
+		kunmap_atomic(kaddr);
+		copy = min(bytes, iov->iov_len - skip);
+	}
+	/* Too bad - revert to non-atomic kmap */
+
+	kaddr = kmap(page);
+	from = kaddr + offset;
+	left = copyout_bpf(buf, from, copy);
+	copy -= left;
+	skip += copy;
+	from += copy;
+	bytes -= copy;
+	while (unlikely(!left && bytes)) {
+		iov++;
+		buf = iov->iov_base;
+		copy = min(bytes, iov->iov_len);
+		left = copyout_bpf(buf, from, copy);
+		copy -= left;
+		skip = copy;
+		from += copy;
+		bytes -= copy;
+	}
+	kunmap(page);
+
+done:
+	if (skip == iov->iov_len) {
+		iov++;
+		skip = 0;
+	}
+	i->count -= wanted - bytes;
+	i->nr_segs -= iov - i->iov;
+	i->iov = iov;
+	i->iov_offset = skip;
+	return wanted - bytes;
+}
+EXPORT_SYMBOL(copy_page_to_iter_iovec_bpf);
+
 
 static size_t copy_page_from_iter_iovec(struct page *page, size_t offset, size_t bytes,
 			 struct iov_iter *i)
@@ -413,6 +510,56 @@ out:
 	return bytes;
 }
 
+
+static size_t copy_page_to_iter_pipe_bpf(struct page *page, size_t offset, size_t bytes,
+			 struct iov_iter *i)
+{
+	struct pipe_inode_info *pipe = i->pipe;
+	struct pipe_buffer *buf;
+	unsigned int p_tail = pipe->tail;
+	unsigned int p_mask = pipe->ring_size - 1;
+	unsigned int i_head = i->head;
+	size_t off;
+
+	if (unlikely(bytes > i->count))
+		bytes = i->count;
+
+	if (unlikely(!bytes))
+		return 0;
+
+	if (!sanity(i))
+		return 0;
+
+	off = i->iov_offset;
+	buf = &pipe->bufs[i_head & p_mask];
+	if (off) {
+		if (offset == off && buf->page == page) {
+			/* merge with the last one */
+			buf->len += bytes;
+			i->iov_offset += bytes;
+			goto out;
+		}
+		i_head++;
+		buf = &pipe->bufs[i_head & p_mask];
+	}
+	if (pipe_full(i_head, p_tail, pipe->max_usage))
+		return 0;
+
+	buf->ops = &page_cache_pipe_buf_ops;
+	get_page(page);
+	buf->page = page;
+	buf->offset = offset;
+	buf->len = bytes;
+
+	pipe->head = i_head + 1;
+	i->iov_offset = offset + bytes;
+	i->head = i_head;
+out:
+	i->count -= bytes;
+	return bytes;
+}
+EXPORT_SYMBOL(copy_page_to_iter_pipe_bpf);
+
 /*
  * Fault in one or more iovecs of the given iov_iter, to a maximum length of
  * bytes.  For each iovec, fault in each page that constitutes the iovec.
@@ -577,6 +724,37 @@ static size_t copy_pipe_to_iter(const void *addr, size_t bytes,
 	return bytes;
 }
 
+
+static size_t copy_pipe_to_iter_bpf(const void *addr, size_t bytes,
+				struct iov_iter *i)
+{
+	struct pipe_inode_info *pipe = i->pipe;
+	unsigned int p_mask = pipe->ring_size - 1;
+	unsigned int i_head;
+	size_t n, off;
+
+	if (!sanity(i))
+		return 0;
+
+	bytes = n = push_pipe(i, bytes, &i_head, &off);
+	if (unlikely(!n))
+		return 0;
+	do {
+		size_t chunk = min_t(size_t, n, PAGE_SIZE - off);
+		memcpy_to_page(pipe->bufs[i_head & p_mask].page, off, addr, chunk);
+		i->head = i_head;
+		i->iov_offset = off + chunk;
+		n -= chunk;
+		addr += chunk;
+		off = 0;
+		i_head++;
+	} while (n);
+	i->count -= bytes;
+	return bytes;
+}
+EXPORT_SYMBOL(copy_pipe_to_iter_bpf);
+
+
 static __wsum csum_and_memcpy(void *to, const void *from, size_t len,
 			      __wsum sum, size_t off)
 {
@@ -618,15 +796,15 @@ static size_t csum_and_copy_to_pipe_iter(const void *addr, size_t bytes,
 	return bytes;
 }
 
-size_t _copy_to_iter(const void *addr, size_t bytes, struct iov_iter *i)
+size_t _copy_to_iter_bpf(const void *addr, size_t bytes, struct iov_iter *i)
 {
 	const char *from = addr;
 	if (unlikely(iov_iter_is_pipe(i)))
-		return copy_pipe_to_iter(addr, bytes, i);
+		return copy_pipe_to_iter_bpf(addr, bytes, i);
 	if (iter_is_iovec(i))
 		might_fault();
 	iterate_and_advance(i, bytes, v,
-		copyout(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len),
+		copyout_bpf(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len),
 		memcpy_to_page(v.bv_page, v.bv_offset,
 			       (from += v.bv_len) - v.bv_len, v.bv_len),
 		memcpy(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len)
@@ -634,7 +812,9 @@ size_t _copy_to_iter(const void *addr, size_t bytes, struct iov_iter *i)
 
 	return bytes;
 }
-EXPORT_SYMBOL(_copy_to_iter);
+EXPORT_SYMBOL(_copy_to_iter_bpf);
+
+
 
 #ifdef CONFIG_ARCH_HAS_UACCESS_MCSAFE
 static int copyout_mcsafe(void __user *to, const void *from, size_t n)
@@ -932,15 +1112,15 @@ size_t copy_page_to_iter_bpf(struct page *page, size_t offset, size_t bytes,
 		return 0;
 	if (i->type & (ITER_BVEC|ITER_KVEC)) {
 		void *kaddr = kmap_atomic(page);
-		size_t wanted = copy_to_iter(kaddr + offset, bytes, i);
+		size_t wanted = copy_to_iter_bpf(kaddr + offset, bytes, i);
 		kunmap_atomic(kaddr);
 		return wanted;
 	} else if (unlikely(iov_iter_is_discard(i)))
 		return bytes;
 	else if (likely(!iov_iter_is_pipe(i)))
-		return copy_page_to_iter_iovec(page, offset, bytes, i);
+		return copy_page_to_iter_iovec_bpf(page, offset, bytes, i);
 	else
-		return copy_page_to_iter_pipe(page, offset, bytes, i);
+		return copy_page_to_iter_pipe_bpf(page, offset, bytes, i);
 }
 EXPORT_SYMBOL(copy_page_to_iter_bpf);
 
