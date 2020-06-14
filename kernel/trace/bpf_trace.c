@@ -704,6 +704,19 @@ static const struct bpf_func_proto bpf_get_current_task_proto = {
 	.ret_type	= RET_INTEGER,
 };
 
+BPF_CALL_0(bpf_myprintk)
+{
+	printk(KERN_DEBUG "mostly harmless\n");
+	return (int) 1;
+}
+
+static const struct bpf_func_proto bpf_myprintk_proto = 
+{
+	.func		= bpf_myprintk,
+	.gpl_only	= true,
+	.ret_type	= RET_INTEGER,
+};
+
 BPF_CALL_2(bpf_current_task_under_cgroup, struct bpf_map *, map, u32, idx)
 {
 	struct bpf_array *array = container_of(map, struct bpf_array, map);
@@ -859,6 +872,12 @@ bpf_tracing_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 		return &bpf_probe_read_user_str_proto;
 	case BPF_FUNC_probe_read_kernel_str:
 		return &bpf_probe_read_kernel_str_proto;
+	case BPF_FUNC_myprintk:
+		return &bpf_myprintk_proto;
+	case BPF_FUNC_strtol:
+		return &bpf_strtol_proto;
+	case BPF_FUNC_strtoul:
+		return &bpf_strtoul_proto;
 #ifdef CONFIG_ARCH_HAS_NON_OVERLAPPING_ADDRESS_SPACE
 	case BPF_FUNC_probe_read:
 		return &bpf_probe_read_compat_proto;
