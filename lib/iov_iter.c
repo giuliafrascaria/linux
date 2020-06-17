@@ -154,7 +154,7 @@ static int copyout(void __user *to, const void *from, size_t n)
 	return n;
 }
 
-static int copyout_bpf(void __user *to, const void *from, size_t n)
+int noinline copyout_bpf(void __user *to, const void *from, size_t n)
 {
 	if (access_ok(to, n)) {
 		kasan_check_read(from, n);
@@ -258,7 +258,7 @@ done:
 	return wanted - bytes;
 }
 
-static size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size_t bytes,
+size_t copy_page_to_iter_iovec_bpf(struct page *page, size_t offset, size_t bytes,
 			 struct iov_iter *i)
 {
 	size_t skip, copy, left, wanted;
