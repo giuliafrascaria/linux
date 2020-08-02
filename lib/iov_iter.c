@@ -158,7 +158,7 @@ int noinline copyout_fmod_test(int n)
 {
 	if (n > 0)
 	{
-		printk(KERN_INFO "fmodret %d\n", n)
+		printk(KERN_INFO "fmodret %d\n", n);
 		return n;
 	}
 	return n;
