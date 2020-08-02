@@ -154,8 +154,27 @@ static int copyout(void __user *to, const void *from, size_t n)
 	return n;
 }
 
+int noinline copyout_fmod_test(int n)
+{
+	if (n > 0)
+	{
+		printk(KERN_INFO "fmodret %d\n", n)
+		return n;
+	}
+	return n;
+}
+ALLOW_ERROR_INJECTION(copyout_fmod_test, ERRNO);
+EXPORT_SYMBOL(copyout_fmod_test);
+
 int noinline copyout_bpf(void __user *to, const void *from, size_t n)
 {
+	if (n == 42)
+	{
+		int testret;
+		testret = copyout_fmod_test(n);
+		printk(KERN_INFO "fmodret return val%d\n", testret);
+	}
+	
 	if (access_ok(to, n)) {
 		kasan_check_read(from, n);
 		n = raw_copy_to_user(to, from, n);
